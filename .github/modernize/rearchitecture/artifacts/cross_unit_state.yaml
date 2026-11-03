@@ -1,0 +1,60 @@
+flows:
+  - name: Paket tugas Admin ke Guru pada browser yang sama
+    medium: static
+    key: qb_admin_paket_v1
+    writer:
+      unit: admin-research
+      source_loc: "src/pages/AdminPage.tsx:47"
+    reader:
+      unit: teacher-evaluation
+      source_loc: "src/pages/GuruPage.tsx:88"
+    pairing: matched
+    must_preserve: true
+    must_confirm: null
+    verification_hint: "Simpan paket pada Admin lalu buka #/guru pada origin/browser sama; paket aktif tampil."
+    notes: "Jika storage Guru sendiri sudah memiliki paket, paket itu didahulukan; pertukaran lintas perangkat menggunakan JSON."
+
+  - name: Hasil live Guru ke pantauan Admin
+    medium: static
+    key: qb_guru_evaluasi_live
+    writer:
+      unit: teacher-evaluation
+      source_loc: "src/pages/GuruPage.tsx:169"
+    reader:
+      unit: admin-research
+      source_loc: "src/pages/AdminPage.tsx:109"
+    pairing: matched
+    must_preserve: true
+    must_confirm: null
+    verification_hint: "Simpan satu evaluasi sebagai Guru pada browser sama; Admin menerima event qb_guru_evaluasi_updated dan memperbarui daftar."
+    notes: "Event custom browser digunakan untuk update dalam sesi/origin yang sama; data lintas perangkat harus diimpor manual."
+
+  - name: State siklus penelitian
+    medium: static
+    key: qb_siklus_state_v2
+    writer:
+      unit: admin-research
+      source_loc: "src/lib/siklus.ts:112"
+    reader:
+      unit: admin-research
+      source_loc: "src/lib/siklus.ts:97"
+    pairing: matched
+    must_preserve: true
+    must_confirm: null
+    verification_hint: "Ubah state siklus, muat ulang halaman, dan pastikan state dipulihkan."
+    notes: "State dibaca/ditulis oleh domain siklus dan digunakan oleh Admin."
+
+  - name: URL API yang tersimpan
+    medium: static
+    key: qb_api_url_v2
+    writer:
+      unit: live-generator
+      source_loc: "src/components/LiveGeneratorModal.tsx:28"
+    reader:
+      unit: live-generator
+      source_loc: "src/components/LiveGeneratorModal.tsx:20"
+    pairing: matched
+    must_preserve: true
+    must_confirm: null
+    verification_hint: "Masukkan URL, tutup dan buka ulang modal; URL pulih tetapi API key tidak."
+    notes: "Hanya URL yang dipersistenkan; API key tetap berada pada state React."

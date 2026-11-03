@@ -1,0 +1,46 @@
+unit: teacher-evaluation
+side_effects:
+  - source_loc: "src/pages/GuruPage.tsx:130"
+    effect: "Autosave hasil penilaian dan audit berdasarkan identitas paket."
+    must_preserve: true
+  - source_loc: "src/pages/GuruPage.tsx:169"
+    effect: "Menulis baris evaluasi live dan mengirim event browser untuk Admin."
+    must_preserve: true
+  - source_loc: "src/pages/GuruPage.tsx:303"
+    effect: "Menyimpan hasil turunan dan menambahkan hasil sebelumnya ke audit trail saat revisi."
+    must_preserve: true
+branches:
+  - source_loc: "src/pages/GuruPage.tsx:34"
+    condition: "Profil memiliki kelas dan filter kelas aktif."
+    behavior: "Tampilkan tugas kelas terpilih; jika tidak ada kecocokan pada paket, tampilkan semua tugas."
+    must_preserve: true
+  - source_loc: "src/pages/GuruPage.tsx:303"
+    condition: "Jawaban SFT dan DPO identik."
+    behavior: "Nilai satu jawaban sebagai kualitas absolut; keputusan A/B tidak diwajibkan."
+    must_preserve: true
+  - source_loc: "src/pages/GuruPage.tsx:303"
+    condition: "Jawaban berbeda."
+    behavior: "Wajib isi skor A, skor B, dan keputusan sebelum menyimpan."
+    must_preserve: true
+  - source_loc: "src/pages/GuruPage.tsx:408"
+    condition: "Paket JSON tidak valid atau terdapat penilaian belum diekspor."
+    behavior: "Tolak paket atau minta konfirmasi sebelum mengganti antrean."
+    must_preserve: true
+error_paths:
+  - source_loc: "src/pages/GuruPage.tsx:408"
+    trigger: "JSON paket tidak dapat dibaca, tugas kosong, field wajib kosong, atau ID duplikat."
+    outcome: "Tampilkan pesan kesalahan dan pertahankan paket yang sedang aktif."
+    contract: "ParsePaketGuruResult dengan sukses=false dan pesan."
+    must_preserve: true
+  - source_loc: "src/pages/GuruPage.tsx:451"
+    trigger: "Kode guru kosong atau tidak ada tugas yang dinilai saat ekspor."
+    outcome: "Tampilkan pesan validasi dan jangan membuat workbook."
+    contract: "Pesan validasi UI."
+    must_preserve: true
+concurrency:
+  model: event-loop
+  tx_boundary:
+    source_loc: "src/pages/GuruPage.tsx:130"
+    scope: "Autosave hasil dan sinkronisasi live merupakan beberapa penulisan localStorage; tidak atomik."
+    isolation: "Tidak ada isolasi database."
+    must_preserve: true

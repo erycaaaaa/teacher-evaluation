@@ -1,0 +1,11 @@
+unit: live-generator
+commit: false
+candidate_splits:
+  - id: "src/components/LiveGeneratorModal.tsx:44-531"
+    drivers: [concern_split]
+    rationale: >
+      Dialog mencampur konfigurasi koneksi dan key, form generator, status,
+      penanganan abort, hasil model, serta penambahan tugas ke paket Admin.
+    source_slice:
+      file: "src/components/LiveGeneratorModal.tsx"
+      lines: [44, 531]

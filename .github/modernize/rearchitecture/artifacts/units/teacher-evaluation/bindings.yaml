@@ -1,0 +1,33 @@
+unit: teacher-evaluation
+bindings:
+  - type: convention
+    name: "React page component"
+    source_loc: "src/pages/GuruPage.tsx:34"
+    target: "GuruPage"
+    must_appear_in_target: true
+    notes: "Dirender oleh App pada hash #/guru."
+  - type: listener
+    name: "beforeunload"
+    source_loc: "src/pages/GuruPage.tsx:191"
+    target: "Peringatan draf kotor/hasil belum diekspor"
+    must_appear_in_target: true
+    notes: "Mencegah kehilangan perubahan yang belum disimpan/ekspor."
+runtime_config:
+  - key: "qb_guru_profil_v1"
+    source_loc: "src/pages/GuruPage.tsx:31"
+    source: code
+    default_value: "kode kosong, kelas kosong, hanya=true"
+    must_appear_in_target: true
+    notes: "Profil anonim dan filter kelas."
+  - key: "qb_guru_paket_v1"
+    source_loc: "src/pages/GuruPage.tsx:32"
+    source: code
+    default_value: "paket demo"
+    must_appear_in_target: true
+    notes: "Paket tugas terakhir yang dimuat guru."
+  - key: "qb_autosave_<dibuat>_<jumlah tugas>"
+    source_loc: "src/pages/GuruPage.tsx:67"
+    source: code
+    default_value: "hasil kosong"
+    must_appear_in_target: true
+    notes: "Autosave dibedakan menggunakan metadata paket."

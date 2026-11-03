@@ -1,0 +1,11 @@
+unit: teacher-evaluation
+commit: false
+candidate_splits:
+  - id: "src/pages/GuruPage.tsx:34-1067"
+    drivers: [concern_split]
+    rationale: >
+      Komponen mengelola profil dan paket, autosave, penilaian buta, audit,
+      navigasi tugas, backup serta ekspor workbook dalam satu entry point.
+    source_slice:
+      file: "src/pages/GuruPage.tsx"
+      lines: [34, 1067]

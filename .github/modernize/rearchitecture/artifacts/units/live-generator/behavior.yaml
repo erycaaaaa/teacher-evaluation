@@ -1,0 +1,39 @@
+unit: live-generator
+side_effects:
+  - source_loc: "src/lib/api.ts:251"
+    effect: "Mengirim chat SFT lalu DPO secara berurutan dengan jeda serial."
+    must_preserve: true
+  - source_loc: "src/components/LiveGeneratorModal.tsx:28"
+    effect: "Menyimpan URL API saja; API key tetap berada di state memori."
+    must_preserve: true
+branches:
+  - source_loc: "src/components/LiveGeneratorModal.tsx:109"
+    condition: "Health response menyatakan DPO tidak ada pada model_stages."
+    behavior: "Tampilkan alasan DPO dinonaktifkan dan cegah generasi pasangan."
+    must_preserve: true
+  - source_loc: "src/lib/api.ts:83"
+    condition: "URL kosong, tidak valid, atau HTTP non-localhost."
+    behavior: "Tolak konfigurasi dengan ApiError kind config."
+    must_preserve: true
+  - source_loc: "src/lib/api.ts:204"
+    condition: "Context atau pertanyaan kosong/melebihi batas."
+    behavior: "Tolak request sebelum mengirim fetch."
+    must_preserve: true
+error_paths:
+  - source_loc: "src/lib/api.ts:112"
+    trigger: "HTTP status 401, 422, atau >=500."
+    outcome: "Petakan ke ApiError auth, validation, atau server dengan status."
+    contract: "ApiError."
+    must_preserve: true
+  - source_loc: "src/lib/api.ts:153"
+    trigger: "Network failure, timeout, abort, atau respons bukan JSON."
+    outcome: "Tampilkan error terklasifikasi; request abort/timeout dibedakan."
+    contract: "ApiError kind network, timeout, aborted, atau protocol."
+    must_preserve: true
+concurrency:
+  model: event-loop
+  tx_boundary:
+    source_loc: "src/lib/api.ts:180"
+    scope: "Queue global memastikan satu request aktif dan jeda 150 ms antar-request."
+    isolation: "Serialisasi request, bukan transaksi data."
+    must_preserve: true

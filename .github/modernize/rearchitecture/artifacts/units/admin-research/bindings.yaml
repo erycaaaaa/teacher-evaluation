@@ -1,0 +1,39 @@
+unit: admin-research
+bindings:
+  - type: convention
+    name: "React page component"
+    source_loc: "src/pages/AdminPage.tsx:51"
+    target: "AdminPage"
+    must_appear_in_target: true
+    notes: "Dirender oleh App untuk hash selain #/guru."
+  - type: listener
+    name: "qb_guru_evaluasi_updated"
+    source_loc: "src/pages/AdminPage.tsx:132"
+    target: "muatLiveGuru"
+    must_appear_in_target: true
+    notes: "Memperbarui hasil live guru di browser yang sama."
+  - type: listener
+    name: "qb_siklus_updated"
+    source_loc: "src/pages/AdminPage.tsx:133"
+    target: "muatSiklusState"
+    must_appear_in_target: true
+    notes: "Memuat ulang state siklus dari localStorage."
+runtime_config:
+  - key: "qb_admin_paket_v1"
+    source_loc: "src/pages/AdminPage.tsx:47"
+    source: code
+    default_value: "null"
+    must_appear_in_target: true
+    notes: "Paket tugas aktif peneliti."
+  - key: "qb_admin_hasil_v1"
+    source_loc: "src/pages/AdminPage.tsx:48"
+    source: code
+    default_value: "[]"
+    must_appear_in_target: true
+    notes: "Hasil guru yang diimpor."
+  - key: "qb_admin_metrik_v1"
+    source_loc: "src/pages/AdminPage.tsx:49"
+    source: code
+    default_value: "null"
+    must_appear_in_target: true
+    notes: "Metrik notebook yang diimpor."

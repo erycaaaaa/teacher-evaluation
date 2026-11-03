@@ -1,0 +1,19 @@
+unit: admin-research
+commit: false
+candidate_splits:
+  - id: "src/pages/AdminPage.tsx:173-700"
+    drivers: [concern_split]
+    rationale: >
+      File halaman mencampur impor split dan guard kebocoran, sinkronisasi hasil guru,
+      pembukaan final test, backup, serta ekspor rekap; perubahan pada concern ini berbeda.
+    source_slice:
+      file: "src/pages/AdminPage.tsx"
+      lines: [173, 700]
+  - id: "src/pages/AdminPage.tsx:900-1672"
+    drivers: [concern_split]
+    rationale: >
+      Rendering panel penelitian, final test, metrik, rekap dan statistik berada
+      dalam satu komponen besar dan dapat dipisah sebagai kandidat UI.
+    source_slice:
+      file: "src/pages/AdminPage.tsx"
+      lines: [900, 1672]

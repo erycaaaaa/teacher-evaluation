@@ -1,0 +1,21 @@
+unit: app-shell
+bindings:
+  - type: route-declaration
+    name: "#/admin"
+    source_loc: "src/App.tsx:9"
+    target: "AdminPage"
+    must_appear_in_target: true
+    notes: "Hash route default; bukan route server-side."
+  - type: route-declaration
+    name: "#/guru"
+    source_loc: "src/App.tsx:9"
+    target: "GuruPage"
+    must_appear_in_target: true
+    notes: "Alias #guru juga diterima."
+  - type: listener
+    name: "window hashchange"
+    source_loc: "src/App.tsx:24"
+    target: "App route state"
+    must_appear_in_target: true
+    notes: "Mengubah tampilan sesuai hash browser."
+runtime_config: []

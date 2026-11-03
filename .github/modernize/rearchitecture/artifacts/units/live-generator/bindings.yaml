@@ -1,0 +1,33 @@
+unit: live-generator
+bindings:
+  - type: convention
+    name: "React modal"
+    source_loc: "src/components/LiveGeneratorModal.tsx:44"
+    target: "LiveGeneratorModal"
+    must_appear_in_target: true
+    notes: "Dibuka dari tombol generator di Admin."
+  - type: route-declaration
+    name: "GET /health"
+    source_loc: "src/lib/api.ts:189"
+    target: "checkHealth"
+    must_appear_in_target: true
+    notes: "Menentukan status koneksi dan tahap model yang tersedia."
+  - type: route-declaration
+    name: "POST /chat"
+    source_loc: "src/lib/api.ts:204"
+    target: "chat"
+    must_appear_in_target: true
+    notes: "Body mengikuti kontrak notebook dan dikirim serial."
+runtime_config:
+  - key: "qb_api_url_v2"
+    source_loc: "src/components/LiveGeneratorModal.tsx:28"
+    source: code
+    default_value: "URL kosong"
+    must_appear_in_target: true
+    notes: "URL API non-secret dapat disimpan di localStorage."
+  - key: "API Key"
+    source_loc: "src/components/LiveGeneratorModal.tsx:48"
+    source: code
+    default_value: "kosong"
+    must_appear_in_target: true
+    notes: "Hanya state komponen; jangan persistensikan atau ekspor."

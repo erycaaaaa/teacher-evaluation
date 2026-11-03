@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: #F3F5F2;
+    --tx: #1B2A2E;
+    --mute: #4B5B5F;
+    --pri: #0B4F4A;
+    --tint: #E4EFEC;
+    --bd: #D9DFDA;
+    --bdi: #8FA09A;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--tx);
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    line-height: 1.5;
+  }
+}
+
+.badge-qb {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: #E4EFEC;
+  color: #0B4F4A;
+}
+
+.badge-qb.biru {
+  background-color: #E3ECFA;
+  color: #1D4ED8;
+}
+
+.badge-qb.kuning {
+  background-color: #FDF0D5;
+  color: #8A4B08;
+}
+
+.badge-qb.merah {
+  background-color: #FDE7E4;
+  color: #7A1D12;
+}
+
+.badge-qb.abu {
+  background-color: #E5E7EB;
+  color: #374151;
+}
+
+/* Accessible focus ring */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+a:focus-visible {
+  outline: 2px solid #1D4ED8 !important;
+  outline-offset: 2px !important;
+}

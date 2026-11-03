@@ -1,0 +1,121 @@
+modules:
+  - name: domain-types
+    kind: dto
+    source_loc: "src/types/index.ts:18"
+    used_by_units:
+      - admin-research
+      - teacher-evaluation
+      - live-generator
+    fields:
+      - name: Tugas
+        type: "Tugas"
+      - name: PaketTugas
+        type: "PaketTugas"
+      - name: EvaluasiGuruRow
+        type: "EvaluasiGuruRow"
+      - name: SiklusState
+        type: "SiklusState"
+      - name: MetrikFinalTestState
+        type: "MetrikFinalTestState"
+      - name: MetrikTahapRow
+        type: "MetrikTahapRow"
+      - name: MetrikCIRow
+        type: "MetrikCIRow"
+      - name: GuruProfil
+        type: "GuruProfil"
+      - name: PenilaianTugasMentah
+        type: "PenilaianTugasMentah"
+      - name: HasilPenilaianTugas
+        type: "HasilPenilaianTugas"
+      - name: AuditTrailEntry
+        type: "AuditTrailEntry"
+    god_class: false
+    split_candidate: false
+    migration_strategy: copy
+    notes: "Kontrak tipe lintas halaman untuk data paket, evaluasi, penelitian, dan integrasi."
+
+  - name: xlsx-export
+    kind: utility
+    source_loc: "src/lib/exportXlsx.ts:149"
+    used_by_units:
+      - admin-research
+      - teacher-evaluation
+    fields:
+      - name: eksporHasilGuru
+        type: "(rows, auditList, kodeGuru) => Promise<void>"
+      - name: eksporRekapAdmin
+        type: "(rows, perGuru, perKelas, catatanProtokol, interRater) => Promise<void>"
+    god_class: false
+    split_candidate: false
+    migration_strategy: copy
+    notes: "Fungsi ekspor workbook dipakai kedua halaman dengan kontrak kolom tetap."
+
+  - name: backup-io
+    kind: utility
+    source_loc: "src/lib/backup.ts:23"
+    used_by_units:
+      - admin-research
+      - teacher-evaluation
+    fields:
+      - name: unduhBerkasCadangan
+        type: "(filename?: string) => void"
+      - name: pulihkanCadanganData
+        type: "(jsonContent: string) => RestoreResult"
+    god_class: false
+    split_candidate: false
+    migration_strategy: copy
+    notes: "Ekspor dan pemulihan data browser dengan prefiks qb_."
+
+  - name: aggregation
+    kind: utility
+    source_loc: "src/lib/aggregate.ts:240"
+    used_by_units:
+      - admin-research
+      - teacher-evaluation
+    fields:
+      - name: hitungAgregasi
+        type: "(rows, tugas) => AgregatHasil"
+      - name: hitungPerGuru
+        type: "(rows) => RekapPerGuru[]"
+      - name: hitungPerKelas
+        type: "(rows, tugas) => RekapPerKelas[]"
+      - name: extractKelasNum
+        type: "(value) => number | null"
+    god_class: false
+    split_candidate: false
+    migration_strategy: copy
+    notes: "Agregasi laporan dan helper kelas bersama."
+
+  - name: research-constants
+    kind: config
+    source_loc: "src/lib/constants.ts:3"
+    used_by_units:
+      - admin-research
+      - teacher-evaluation
+    fields:
+      - name: KRITERIA
+        type: "readonly KriteriaKey[]"
+      - name: KEPUTUSAN_OPTIONS
+        type: "readonly KeputusanModel[]"
+      - name: DEMO_TUGAS
+        type: "Tugas[]"
+    god_class: false
+    split_candidate: false
+    migration_strategy: copy
+    notes: "Rubrik, keputusan, dan data demo yang dipakai bersama."
+
+  - name: package-validation
+    kind: utility
+    source_loc: "src/lib/paket.ts:1"
+    used_by_units:
+      - admin-research
+      - teacher-evaluation
+    fields:
+      - name: parseFinalTestFiles
+        type: "(files, trainIds?, valIds?) => Promise<ParseFinalTestResult>"
+      - name: validatePaketGuru
+        type: "(jsonString) => ParsePaketGuruResult"
+    god_class: false
+    split_candidate: false
+    migration_strategy: copy
+    notes: "Import berkas evaluasi dan validasi paket guru."

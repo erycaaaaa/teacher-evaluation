@@ -1,0 +1,91 @@
+contracts:
+  - name: Kaggle FastAPI health check
+    unit: live-generator
+    type: rest
+    stability: must_preserve
+    source_loc: "src/lib/api.ts:189"
+    contract:
+      method: GET
+      path: /health
+      request: "Tanpa body; header ngrok-skip-browser-warning dan X-API-Key bila key diisi"
+      response: "{status: string, model_stages: string[], cuda: boolean}"
+      error: "401 auth; network/timeout/protocol error dipetakan ke ApiError"
+      auth: "X-API-Key; cookie tidak dikirim"
+    target_contract:
+      method: "checkHealth(cfg: ApiConfig, signal?: AbortSignal): Promise<HealthResult>"
+      notes: "Klien browser meminta status dan model stages dari backend notebook."
+    semantic_divergence: []
+
+  - name: Kaggle FastAPI model chat
+    unit: live-generator
+    type: rest
+    stability: frozen
+    source_loc: "src/lib/api.ts:204"
+    contract:
+      method: POST
+      path: /chat
+      request: "{context, pertanyaan, max_new_tokens, model_stage, terapkan_chunking}; tidak ada message atau kelas"
+      response: "{jawaban, konteks_dipakai, model_stage, processing_time_ms}"
+      error: "401 API key; 422 validasi; 500 kegagalan model; timeout/network/protocol"
+      auth: "X-API-Key"
+    target_contract:
+      method: "chat(cfg: ApiConfig, params: ChatParams): Promise<ChatResult>"
+      notes: "Nama wire field mengikuti notebook; pasangan SFT kemudian DPO harus serial."
+    semantic_divergence:
+      - field: "pertanyaan"
+        issue: "Nama properti JSON harus tetap pertanyaan; message bukan field kontrak."
+        source_loc: "src/lib/api.ts:226"
+      - field: "credentials"
+        issue: "Fetch tidak mengirim cookie; CORS notebook menggunakan allow_credentials=false."
+        source_loc: "src/lib/api.ts:153"
+
+  - name: Paket tugas JSON
+    unit: admin-research
+    type: file
+    stability: must_preserve
+    source_loc: "src/lib/paket.ts:362"
+    contract:
+      method: "JSON file exchange"
+      path: "PaketTugas"
+      request: "{versi, dibuat, set?, siklus?, tugas:[Tugas]}"
+      response: "PaketTugas tervalidasi dan disimpan browser"
+      error: "JSON tidak valid, tugas kosong, field wajib kosong, atau ID duplikat ditolak"
+      auth: "Tidak ada; berkas lokal"
+    target_contract:
+      method: "validatePaketGuru(jsonString: string): ParsePaketGuruResult"
+      notes: "Mempertahankan field wajib dan metadata paket yang sudah diterima."
+    semantic_divergence: []
+
+  - name: Workbook evaluasi guru
+    unit: teacher-evaluation
+    type: file
+    stability: frozen
+    source_loc: "src/lib/exportXlsx.ts:41"
+    contract:
+      method: "XLSX export/import"
+      path: "Sheet Evaluasi_Guru dan Audit_Trail"
+      request: "Hasil penilaian guru dan histori revisi"
+      response: "Evaluasi_Guru memiliki 27 kolom baku"
+      error: "Kesalahan workbook ditampilkan pada UI saat ekspor/impor"
+      auth: "Tidak ada; berkas lokal"
+    target_contract:
+      method: "eksporHasilGuru(rows, auditList, kodeGuru): Promise<void>"
+      notes: "Urutan dan nama kolom mengikuti EvaluasiGuruRow."
+    semantic_divergence: []
+
+  - name: Feedback anotasi untuk notebook
+    unit: admin-research
+    type: file
+    stability: frozen
+    source_loc: "src/lib/exportXlsx.ts:168"
+    contract:
+      method: "XLSX workbook"
+      path: "Sheet Feedback"
+      request: "Anotasi dua kandidat per ID"
+      response: "Enam kolom persis: id, kelas, pertanyaan, context, jawaban, status"
+      error: "Format/kolom salah ditolak parser anotasi"
+      auth: "Tidak ada; berkas lokal"
+    target_contract:
+      method: "eksporAnotasiGuru(pool, hasilList, kodeGuru, siklus): Promise<void>"
+      notes: "Format ditujukan untuk pertukaran file dengan notebook; alur UI ekspor ini belum tampak terhubung."
+    semantic_divergence: []

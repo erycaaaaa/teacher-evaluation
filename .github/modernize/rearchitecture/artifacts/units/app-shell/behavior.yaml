@@ -1,0 +1,22 @@
+unit: app-shell
+side_effects:
+  - source_loc: "src/App.tsx:27"
+    effect: "Jika URL hash kosong, menetapkan hash awal ke #/admin."
+    must_preserve: true
+branches:
+  - source_loc: "src/App.tsx:9"
+    condition: "Hash adalah #/guru atau #guru."
+    behavior: "Pilih halaman Guru; hash lain/default menampilkan halaman Admin."
+    must_preserve: true
+  - source_loc: "src/App.tsx:24"
+    condition: "Hash berubah saat aplikasi berjalan."
+    behavior: "Listener hashchange memperbarui halaman yang dirender."
+    must_preserve: true
+error_paths: []
+concurrency:
+  model: event-loop
+  tx_boundary:
+    source_loc: "src/App.tsx:24"
+    scope: "Tidak ada transaksi database; navigasi berupa event browser."
+    isolation: "Tidak berlaku."
+    must_preserve: true

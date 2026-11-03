@@ -147,3 +147,59 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+# Secrets (never commit)
+.env
+.env.*
+!.env.example
+*.key
+secrets.json
+kaggle.json
+
+# Model weights and adapters
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.gguf
+*.onnx
+*.h5
+sft_adapters/
+sft_best_*_merged/
+dpo_model_terbaik/
+dpo_model_terbaik_merged/
+dpo_runs/
+fine_tune_runs/
+saved_models/
+
+# Experiment outputs and exports
+export_*/
+export_*.zip
+*.zip
+arsip_sft_lama/
+bertscore_audit_manual/
+evaluation_details/
+dataset_splits/
+paper_bertscore_fixed/
+*.joblib
+final_test_log.json
+dpo_eos_check.json
+config_eksperimen.json
+
+# Data (add back only if you are allowed to publish it)
+*.xlsx
+*.csv
+*.npz
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

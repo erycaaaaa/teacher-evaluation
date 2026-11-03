@@ -1,0 +1,46 @@
+unit: admin-research
+side_effects:
+  - source_loc: "src/pages/AdminPage.tsx:174"
+    effect: "Mengimpor pasangan jawaban final test, menyimpan paket aktif, dan mengosongkan hasil guru lama saat paket diganti."
+    must_preserve: true
+  - source_loc: "src/pages/AdminPage.tsx:563"
+    effect: "Menyimpan state saat final test dibuka dan merekam pembukaan melalui state siklus."
+    must_preserve: true
+  - source_loc: "src/pages/AdminPage.tsx:608"
+    effect: "Membangun dan mengunduh workbook rekap penelitian dari hasil yang digabungkan."
+    must_preserve: true
+branches:
+  - source_loc: "src/pages/AdminPage.tsx:174"
+    condition: "Berkas final test gagal validasi format, pasangan ID/reference, split, atau guard kebocoran."
+    behavior: "Impor dibatalkan dan pesan kesalahan ditampilkan."
+    must_preserve: true
+  - source_loc: "src/pages/AdminPage.tsx:563"
+    condition: "Final test dibuka tanpa klaim gerbang lolos."
+    behavior: "Pembukaan hanya dapat diteruskan melalui override protokol dengan alasan yang memenuhi batas UI."
+    must_preserve: true
+  - source_loc: "src/pages/AdminPage.tsx:700"
+    condition: "Hasil live dan impor memiliki kode guru+ID yang sama."
+    behavior: "Gunakan hasil yang dianggap lebih baru berdasarkan nilai Waktu."
+    must_preserve: true
+  - source_loc: "src/pages/AdminPage.tsx:724"
+    condition: "Tab yang dipilih adalah Anotasi, DPO, atau Validasi."
+    behavior: "Tampilkan panel instruksional; tidak seluruh fungsi domain terkait tersambung sebagai alur UI."
+    must_preserve: true
+error_paths:
+  - source_loc: "src/pages/AdminPage.tsx:174"
+    trigger: "File evaluasi ditolak parser atau gagal dibaca."
+    outcome: "Tampilkan pesan kegagalan impor; jangan menyimpan paket baru."
+    contract: "ParseFinalTestResult dengan sukses=false dan pesan."
+    must_preserve: true
+  - source_loc: "src/pages/AdminPage.tsx:608"
+    trigger: "Ekspor rekap gagal atau belum ada hasil."
+    outcome: "Tampilkan pesan kesalahan; status ekspor dihentikan."
+    contract: "Error ditampilkan pada UI."
+    must_preserve: true
+concurrency:
+  model: event-loop
+  tx_boundary:
+    source_loc: "src/pages/AdminPage.tsx:160"
+    scope: "Tidak ada transaksi atomik; paket, hasil, metrik, dan siklus ditulis terpisah ke localStorage."
+    isolation: "Tidak ada isolasi database."
+    must_preserve: true

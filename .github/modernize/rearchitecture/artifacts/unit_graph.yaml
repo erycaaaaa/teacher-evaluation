@@ -1,0 +1,131 @@
+units:
+  - name: app-shell
+    trigger: page
+    trigger_detail: "Browser membuka root SPA; hash #/admin atau #/guru"
+    source_anchors:
+      - path: src/main.tsx
+        line: 1
+      - path: src/App.tsx
+        line: 6
+    exported_signature:
+      - method: "App: React.FC"
+        source_loc: "src/App.tsx:6"
+        stability: must_preserve
+    dynamic_entrypoints: []
+    depends_on:
+      - unit: admin-research
+        via: "render AdminPage saat hash bukan #/guru"
+      - unit: teacher-evaluation
+        via: "render GuruPage saat hash #/guru"
+    shared_refs: []
+
+  - name: admin-research
+    trigger: page
+    trigger_detail: "Hash route #/admin"
+    source_anchors:
+      - path: src/pages/AdminPage.tsx
+        line: 51
+      - path: src/components/TabSiklus.tsx
+        line: 24
+    exported_signature:
+      - method: "AdminPage: React.FC"
+        source_loc: "src/pages/AdminPage.tsx:51"
+        stability: must_preserve
+    dynamic_entrypoints: []
+    depends_on:
+      - unit: live-generator
+        via: "AdminPage membuka LiveGeneratorModal"
+    shared_refs:
+      - module: domain-types
+        used_fields:
+          - Tugas
+          - PaketTugas
+          - EvaluasiGuruRow
+          - SiklusState
+          - MetrikFinalTestState
+          - MetrikTahapRow
+          - MetrikCIRow
+      - module: xlsx-export
+        used_fields:
+          - eksporRekapAdmin
+      - module: backup-io
+        used_fields:
+          - unduhBerkasCadangan
+          - pulihkanCadanganData
+      - module: aggregation
+        used_fields:
+          - hitungAgregasi
+          - hitungPerGuru
+          - hitungPerKelas
+      - module: research-constants
+        used_fields:
+          - KRITERIA
+          - KEPUTUSAN_OPTIONS
+      - module: package-validation
+        used_fields:
+          - parseFinalTestFiles
+
+  - name: teacher-evaluation
+    trigger: page
+    trigger_detail: "Hash route #/guru"
+    source_anchors:
+      - path: src/pages/GuruPage.tsx
+        line: 34
+    exported_signature:
+      - method: "GuruPage: React.FC"
+        source_loc: "src/pages/GuruPage.tsx:34"
+        stability: must_preserve
+    dynamic_entrypoints: []
+    depends_on: []
+    shared_refs:
+      - module: domain-types
+        used_fields:
+          - Tugas
+          - PaketTugas
+          - GuruProfil
+          - PenilaianTugasMentah
+          - HasilPenilaianTugas
+          - AuditTrailEntry
+          - EvaluasiGuruRow
+      - module: xlsx-export
+        used_fields:
+          - eksporHasilGuru
+      - module: backup-io
+        used_fields:
+          - unduhBerkasCadangan
+          - pulihkanCadanganData
+      - module: aggregation
+        used_fields:
+          - extractKelasNum
+      - module: research-constants
+        used_fields:
+          - KRITERIA
+          - DEMO_TUGAS
+      - module: package-validation
+        used_fields:
+          - validatePaketGuru
+
+  - name: live-generator
+    trigger: page
+    trigger_detail: "Dialog Generator Live API dibuka dari halaman #/admin"
+    source_anchors:
+      - path: src/components/LiveGeneratorModal.tsx
+        line: 44
+      - path: src/lib/api.ts
+        line: 189
+    exported_signature:
+      - method: "checkHealth(cfg: ApiConfig, signal?: AbortSignal): Promise<HealthResult>"
+        source_loc: "src/lib/api.ts:189"
+        stability: must_preserve
+      - method: "chat(cfg: ApiConfig, params: ChatParams): Promise<ChatResult>"
+        source_loc: "src/lib/api.ts:204"
+        stability: frozen
+      - method: "generatePair(cfg: ApiConfig, params: Omit<ChatParams, 'modelStage'>): Promise<PairResult>"
+        source_loc: "src/lib/api.ts:251"
+        stability: must_preserve
+    dynamic_entrypoints: []
+    depends_on: []
+    shared_refs:
+      - module: domain-types
+        used_fields:
+          - Tugas
