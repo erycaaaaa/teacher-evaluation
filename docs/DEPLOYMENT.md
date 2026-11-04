@@ -8,6 +8,8 @@ Menjelaskan deployment yang benar-benar dikonfigurasi dan urutan menjalankan bac
 
 `.github/workflows/ci-cd.yml` membangun folder `dist` lalu mendeploy ke GitHub Pages pada push ke `main`/`master`. Vite memakai `base: './'`.
 
+Untuk deployment di Netlify, repo sudah menyertakan [`netlify.toml`](../netlify.toml) agar build dijalankan dari root proyek dan publikasi hasil build diarahkan ke `dist`. Pastikan juga `VITE_API_URL` diatur di environment variable Netlify; nilai `VITE_API_KEY` tidak boleh disimpan sebagai secret yang langsung dipakai di frontend karena akan terbaca oleh browser.
+
 **Penting:** workflow yang ada tidak mengisi `VITE_API_URL` atau `VITE_API_KEY` saat build. Karena variabel Vite dikompilasi, chatbot hasil Pages tidak dapat menghubungi API kecuali build diberi config yang benar. Menambahkan API key sebagai build secret masih membuat nilainya dapat dibaca dari browser; gunakan proxy server-side sebelum memakai key sensitif di layanan publik.
 
 ## Backend
