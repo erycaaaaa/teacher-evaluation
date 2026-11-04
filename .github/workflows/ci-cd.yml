@@ -7,19 +7,7 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
 jobs:
-  # ==========================================
-  # STAGE 1: Quality Gate & Automated Testing
-  # ==========================================
   test-and-lint:
     name: 🧪 Lint, Typecheck & Unit Tests
     runs-on: ubuntu-latest
@@ -39,12 +27,9 @@ jobs:
       - name: 🔍 TypeScript Compilation Check
         run: npx tsc --noEmit
 
-      - name: 🧪 Run Vitest Suite (Contract, Blind, Normalize)
+      - name: 🧪 Run Vitest Suite
         run: npm run test
 
-  # ==========================================
-  # STAGE 2: Production Build
-  # ==========================================
   build:
     name: 🏗️ Production Build
     needs: test-and-lint
@@ -65,23 +50,8 @@ jobs:
       - name: 🔨 Build Static Bundle
         run: npm run build
 
-      - name: 📤 Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: 📤 Upload Build Artifact
+        uses: actions/upload-artifact@v4
         with:
-          path: './dist'
-
-  # ==========================================
-  # STAGE 3: Continuous Deployment (GitHub Pages)
-  # ==========================================
-  deploy:
-    name: 🚀 Deploy to GitHub Pages
-    needs: build
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: 🌐 Deploy Static Site to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          name: guru-build
+          path: ./dist
