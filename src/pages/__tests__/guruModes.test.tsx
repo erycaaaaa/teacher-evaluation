@@ -3,8 +3,9 @@ import type { MouseEvent, ReactElement, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AnotasiGuruPage } from '../AnotasiGuruPage';
 import { EvaluasiGuruPage } from '../EvaluasiGuruPage';
+import { GuruPage } from '../GuruPage';
 import { RUBRIK_DEFAULT } from '../../lib/constants';
-import { getSkorConsistencyWarnings } from '../../lib/skor';
+import { evaluatePair } from '../../lib/skor';
 import { toggleSkor } from '../../lib/skor';
 import { SkorKriteriaRow } from '../../components/SkorKriteriaRow';
 import { NilaiSkor, RubrikRow, SkorJawaban } from '../../types';
@@ -59,67 +60,70 @@ describe('tampilan mode Ruang Guru', () => {
     vi.unstubAllGlobals();
   });
 
+  it('menawarkan pemilihan week dan hanya mengaktifkan week yang memiliki Excel lokal', () => {
+    const markup = renderToStaticMarkup(<GuruPage />);
+
+    expect(markup).toContain('Pilih soal berdasarkan minggu');
+    expect(markup).toContain('aria-label="Pilih week"');
+    expect(markup).toContain('Muat soal Week 1');
+    expect(markup).toContain('Week 1</option>');
+    expect(markup).toContain('Week 2 (belum tersedia)');
+    expect(markup).toMatch(/<option[^>]*disabled=""[^>]*>Week 2/);
+  });
+
   it('menampilkan skor dan rubrik yang dimuat di mode anotasi', () => {
     localStorage.setItem('qb_guru_anotasi_rows_v1', JSON.stringify(feedbackRows));
     localStorage.setItem('qb_guru_anotasi_rubrik_v1', JSON.stringify([{
-      kriteria: 'Rubrik dari file',
+      kriteria: 'Ketepatan Materi',
       skor1: 'Deskripsi kurang dari file',
       skor3: 'Deskripsi cukup dari file',
       skor5: 'Deskripsi baik dari file',
-    }]));
+    }, ...RUBRIK_DEFAULT.slice(1)]));
     localStorage.setItem('qb_guru_anotasi_skor_v1', JSON.stringify({
-      '["PJOK_0315","Jawaban pertama."]': { 'Rubrik dari file': 3 },
+      '["PJOK_0315","Jawaban pertama."]': { 'Ketepatan Materi': 3 },
     }));
     const markup = renderToStaticMarkup(
       <AnotasiGuruPage warningMessages={[]} />
     );
 
     expect(markup).toContain('Rubrik penilaian');
-    expect(markup).toContain('Rubrik dari file');
+    expect(markup).toContain('Ketepatan Materi');
     expect(markup).toContain('Deskripsi kurang dari file');
     expect(markup).toContain('Skala: 1 = kurang, 3 = cukup, 5 = baik.');
-    expect(markup).toContain('Rubrik dari file skor 3');
+    expect(markup).toContain('Ketepatan Materi skor 3');
     expect(markup).toContain('aria-pressed="true"');
     expect(markup).toContain('Yes');
     expect(markup).toContain('No');
-    expect(markup).toContain('aria-label="Rubrik dari file untuk Jawaban');
-    expect(markup).toMatch(/aria-label="Rubrik dari file skor [1-5]"/);
+    expect(markup).toContain('aria-label="Ketepatan Materi untuk Jawaban');
+    expect(markup).toMatch(/aria-label="Ketepatan Materi skor [1-5]"/);
     expect(markup).not.toContain('<textarea');
   });
 
-  it('merender rubrik dengan tiga atau tujuh kriteria', () => {
-    for (const count of [3, 7]) {
-      const rubric = Array.from({ length: count }, (_, index) => ({
-        kriteria: `Kriteria ${index + 1}`,
-        skor1: `Kurang ${index + 1}`,
-        skor3: `Cukup ${index + 1}`,
-        skor5: `Baik ${index + 1}`,
-      }));
+  it('merender empat kriteria penelitian resmi', () => {
+    for (const rubric of [RUBRIK_DEFAULT]) {
       localStorage.setItem('qb_guru_anotasi_rows_v1', JSON.stringify(feedbackRows));
       localStorage.setItem('qb_guru_anotasi_rubrik_v1', JSON.stringify(rubric));
       const markup = renderToStaticMarkup(<AnotasiGuruPage warningMessages={[]} />);
-      expect(markup).toContain(`Kriteria ${count}`);
-      expect(markup).not.toContain(`Kriteria ${count + 1}`);
+      RUBRIK_DEFAULT.forEach(criteria => expect(markup).toContain(criteria.kriteria));
     }
   });
 
   it('menampilkan peringatan konsistensi Yes/No dan skor yang bertentangan', () => {
-    const yesRow = { ...feedbackRows[0], status: 'Yes' as const };
-    const noRow = { ...feedbackRows[1], status: 'No' as const };
-    const rubric = RUBRIK_DEFAULT.slice(0, 2);
-    expect(getSkorConsistencyWarnings(yesRow, 'Jawaban 1', rubric, {
-      [rubric[0].kriteria]: 1,
-    })[0]).toContain(rubric[0].kriteria);
-    expect(getSkorConsistencyWarnings(noRow, 'Jawaban 2', rubric, {
-      [rubric[0].kriteria]: 4,
-      [rubric[1].kriteria]: 5,
-    })[0]).toContain('ditandai No');
-    expect(getSkorConsistencyWarnings(yesRow, 'Jawaban 1', rubric, {
-      [rubric[0].kriteria]: 4,
-    })).toEqual([]);
-    expect(getSkorConsistencyWarnings(noRow, 'Jawaban 2', rubric, {
-      [rubric[0].kriteria]: 4,
-    })).toEqual([]);
+    const rows = [
+      { ...feedbackRows[0], status: 'Yes' as const },
+      { ...feedbackRows[1], status: 'No' as const },
+    ];
+    const keyA = JSON.stringify([rows[0].id, rows[0].jawaban]);
+    const keyB = JSON.stringify([rows[1].id, rows[1].jawaban]);
+    const scores = {
+      [keyA]: Object.fromEntries(RUBRIK_DEFAULT.map(item => [item.kriteria, 3])) as SkorJawaban,
+      [keyB]: Object.fromEntries(RUBRIK_DEFAULT.map(item => [item.kriteria, 5])) as SkorJawaban,
+    };
+    expect(evaluatePair(rows, scores, RUBRIK_DEFAULT).warning).toContain('Yes');
+    expect(evaluatePair(rows, {
+      [keyA]: Object.fromEntries(RUBRIK_DEFAULT.map(item => [item.kriteria, 5])) as SkorJawaban,
+      [keyB]: Object.fromEntries(RUBRIK_DEFAULT.map(item => [item.kriteria, 3])) as SkorJawaban,
+    }, RUBRIK_DEFAULT).isValid).toBe(true);
   });
 
   it('menampilkan dan menghilangkan banner peringatan konsistensi pada UI', () => {
@@ -130,21 +134,19 @@ describe('tampilan mode Ruang Guru', () => {
       { ...feedbackRows[1], status: 'No' },
     ]));
     localStorage.setItem('qb_guru_anotasi_skor_v1', JSON.stringify({
-      '["PJOK_0315","Jawaban pertama."]': { 'Ketepatan Materi': 1 },
-      '["PJOK_0315","Jawaban kedua."]': { 'Ketepatan Materi': 5 },
+      '["PJOK_0315","Jawaban pertama."]': Object.fromEntries(RUBRIK_DEFAULT.map(item => [item.kriteria, 3])),
+      '["PJOK_0315","Jawaban kedua."]': Object.fromEntries(RUBRIK_DEFAULT.map(item => [item.kriteria, 5])),
     }));
 
     const warningMarkup = renderToStaticMarkup(<AnotasiGuruPage warningMessages={[]} />);
-    expect(warningMarkup).toContain('ditandai Yes');
-    expect(warningMarkup).toContain('ditandai No');
+    expect(warningMarkup).toContain('Skor jawaban Yes harus lebih tinggi');
 
     localStorage.setItem('qb_guru_anotasi_skor_v1', JSON.stringify({
-      '["PJOK_0315","Jawaban pertama."]': { 'Ketepatan Materi': 4 },
-      '["PJOK_0315","Jawaban kedua."]': { 'Ketepatan Materi': 3 },
+      '["PJOK_0315","Jawaban pertama."]': Object.fromEntries(RUBRIK_DEFAULT.map(item => [item.kriteria, 5])),
+      '["PJOK_0315","Jawaban kedua."]': Object.fromEntries(RUBRIK_DEFAULT.map(item => [item.kriteria, 3])),
     }));
     const clearMarkup = renderToStaticMarkup(<AnotasiGuruPage warningMessages={[]} />);
-    expect(clearMarkup).not.toContain('ditandai Yes');
-    expect(clearMarkup).not.toContain('ditandai No');
+    expect(clearMarkup).not.toContain('Skor jawaban Yes harus lebih tinggi');
   });
 
   it('membiarkan Berikutnya aktif untuk tugas lengkap saat ada tugas berikutnya', () => {
@@ -152,8 +154,13 @@ describe('tampilan mode Ruang Guru', () => {
       ...row,
       status: index === 0 || index === 2 ? 'Yes' : 'No',
     }));
+    const scores = completeScores(followingTaskRows);
+    scores['["PJOK_0315","Jawaban pertama."]'] = Object.fromEntries(RUBRIK_DEFAULT.map(item => [item.kriteria, 5]));
+    scores['["PJOK_0315","Jawaban kedua."]'] = Object.fromEntries(RUBRIK_DEFAULT.map(item => [item.kriteria, 3]));
+    scores['["PJOK_0316","Jawaban ketiga"]'] = Object.fromEntries(RUBRIK_DEFAULT.map(item => [item.kriteria, 5]));
+    scores['["PJOK_0316","Jawaban keempat"]'] = Object.fromEntries(RUBRIK_DEFAULT.map(item => [item.kriteria, 3]));
     localStorage.setItem('qb_guru_anotasi_rows_v1', JSON.stringify(completedRows));
-    localStorage.setItem('qb_guru_anotasi_skor_v1', JSON.stringify(completeScores(followingTaskRows)));
+    localStorage.setItem('qb_guru_anotasi_skor_v1', JSON.stringify(scores));
 
     const markup = renderToStaticMarkup(<AnotasiGuruPage warningMessages={[]} />);
     const nextButton = markup.match(/<button[^>]*>Berikutnya<\/button>/)?.[0];
@@ -170,16 +177,20 @@ describe('tampilan mode Ruang Guru', () => {
       ...row,
       status: index < 2 ? (index === 0 ? firstStatus : secondStatus) : 'Yes',
     }));
+    const scores = completeScores(followingTaskRows);
+    const firstKey = JSON.stringify(['PJOK_0315', 'Jawaban pertama.']);
+    const secondKey = JSON.stringify(['PJOK_0315', 'Jawaban kedua.']);
+    scores[firstKey] = Object.fromEntries(RUBRIK_DEFAULT.map(item => [item.kriteria, 5]));
+    scores[secondKey] = Object.fromEntries(RUBRIK_DEFAULT.map(item => [item.kriteria, 3]));
     localStorage.setItem('qb_guru_anotasi_rows_v1', JSON.stringify(completedRows));
-    localStorage.setItem('qb_guru_anotasi_skor_v1', JSON.stringify(completeScores(followingTaskRows)));
+    localStorage.setItem('qb_guru_anotasi_skor_v1', JSON.stringify(scores));
 
     const markup = renderToStaticMarkup(<AnotasiGuruPage warningMessages={[]} />);
     const nextButton = markup.match(/<button[^>]*>Berikutnya<\/button>/)?.[0];
     expect(markup).toContain('Tugas 1 dari 2');
-    expect(markup).toContain('Pasangan ini tidak menghasilkan preferensi yang jelas.');
-    if (firstStatus === 'No') expect(markup).toContain('ditandai No');
+    expect(markup).toContain('Pilih tepat satu Yes dan satu No.');
     expect(nextButton).toBeDefined();
-    expect(nextButton).not.toContain('disabled=""');
+    expect(nextButton).toContain('disabled=""');
   });
 
   it('menonaktifkan Berikutnya hanya pada tugas terakhir dan tetap menyediakan ekspor', () => {
@@ -189,13 +200,11 @@ describe('tampilan mode Ruang Guru', () => {
     localStorage.setItem('qb_guru_profil_v1', JSON.stringify({ kode: 'G01', kelas: [3], hanya: true }));
 
     const markup = renderToStaticMarkup(<AnotasiGuruPage warningMessages={[]} />);
-    const nextButton = markup.match(/<button[^>]*>Berikutnya<\/button>/)?.[0];
-    const exportButton = markup.match(/<button[^>]*>[\s\S]*?Simpan hasil saya \(\.xlsx\)[\s\S]*?<\/button>/)?.[0];
+    const reviewButton = markup.match(/<button[^>]*>Review Semua Jawaban<\/button>/)?.[0];
     expect(markup).toContain('Tugas 1 dari 1');
-    expect(nextButton).toContain('disabled=""');
+    expect(reviewButton).toBeDefined();
+    expect(reviewButton).toContain('disabled=""');
     expect(markup).toContain('Ini tugas terakhir pada daftar yang ditampilkan.');
-    expect(exportButton).toBeDefined();
-    expect(exportButton).not.toContain('disabled=""');
   });
 
   it('memilih skor dari kotak, membatalkannya saat diklik ulang, dan menampilkan deskripsi terpilih', () => {

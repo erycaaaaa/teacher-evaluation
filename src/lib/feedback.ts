@@ -2,7 +2,7 @@ import { muatXlsx } from './xlsxLoader';
 import { hash } from './blind';
 import { ANOTASI_SKOR_WAJIB, RUBRIK_DEFAULT } from './constants';
 import { parseRubrikSheet } from './rubrik';
-import { parseSkorSheet } from './skor';
+import { evaluatePair, parseSkorSheet } from './skor';
 import { RubrikRow, SkorJawaban } from '../types';
 
 export const FEEDBACK_HEADERS = ['id', 'kelas', 'pertanyaan', 'context', 'jawaban', 'status'] as const;
@@ -58,16 +58,9 @@ export function feedbackGroupComplete(
   skor: Record<string, SkorJawaban> = {},
   rubrik: RubrikRow[] = RUBRIK_DEFAULT,
 ): boolean {
-  return Boolean(group.id.trim()) &&
-    group.rows.length === 2 &&
-    group.rows.every(row =>
-      row.jawaban.trim() !== '' &&
-      (row.status === 'Yes' || row.status === 'No') &&
-      (!ANOTASI_SKOR_WAJIB || rubrik.every(criteria => {
-        const score = skor[feedbackRowKey(row)]?.[criteria.kriteria];
-        return typeof score === 'number' && Number.isInteger(score) && score >= 1 && score <= 5;
-      }))
-    );
+  if (!group.id.trim() || !ANOTASI_SKOR_WAJIB) return false;
+  if (!group.rows.every(row => row.jawaban.trim() !== '')) return false;
+  return evaluatePair(group.rows, skor, rubrik).isValid;
 }
 
 export async function parseFeedbackFile(file: File): Promise<FeedbackParseResult> {

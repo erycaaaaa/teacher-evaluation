@@ -24,7 +24,9 @@ describe('sheet Rubrik', () => {
       [customRubrik[0].kriteria, customRubrik[0].skor1, customRubrik[0].skor3, customRubrik[0].skor5],
     ]));
 
-    expect(result).toEqual({ rubrik: customRubrik, usedDefault: false });
+    expect(result.rubrik).toEqual(RUBRIK_DEFAULT);
+    expect(result.usedDefault).toBe(false);
+    expect(result.warning).toContain('Kriteria di luar rubrik penelitian diabaikan');
   });
 
   it('menerima header alternatif dan mengabaikan kolom lain', () => {
@@ -32,7 +34,7 @@ describe('sheet Rubrik', () => {
       ['Kriteria', 'Catatan', 'Skor 1', 'Skor 3', 'Skor 5'],
       ['Satu', 'diabaikan', 'Kurang', 'Cukup', 'Baik'],
     ]));
-    expect(result.rubrik).toEqual([{ kriteria: 'Satu', skor1: 'Kurang', skor3: 'Cukup', skor5: 'Baik' }]);
+    expect(result.rubrik).toEqual(RUBRIK_DEFAULT);
   });
 
   it('menggunakan rubrik default tanpa warning jika sheet tidak ada', () => {
@@ -57,7 +59,7 @@ describe('sheet Rubrik', () => {
       ['', 'x', 'y', 'z'],
       ['Satu', 'Kurang', 'Cukup', 'Baik'],
     ]));
-    expect(parsed.rubrik).toEqual([{ kriteria: 'Satu', skor1: 'Kurang', skor3: 'Cukup', skor5: 'Baik' }]);
+    expect(parsed.rubrik).toEqual(RUBRIK_DEFAULT);
 
     const empty = parseRubrikSheet(workbookWithRubrik([
       ['kriteria', 'skor_1_kurang', 'skor_3_cukup', 'skor_5_baik'],
@@ -77,7 +79,8 @@ describe('sheet Rubrik', () => {
     expect(XLSX.utils.sheet_to_json(reloaded.Sheets.Rubrik, { header: 1 })[0]).toEqual([
       'kriteria', 'skor_1_kurang', 'skor_3_cukup', 'skor_5_baik',
     ]);
-    expect(parseRubrikSheet(reloaded)).toEqual({ rubrik: customRubrik, usedDefault: false });
+    expect(parseRubrikSheet(reloaded).rubrik).toEqual(RUBRIK_DEFAULT);
+    expect(parseRubrikSheet(reloaded).usedDefault).toBe(false);
   });
 
   it('membatasi jumlah baris 20 dan panjang sel 500 karakter dengan peringatan', () => {
@@ -92,8 +95,8 @@ describe('sheet Rubrik', () => {
       ]),
     ]);
     const result = parseRubrikSheet(tooManyRows);
-    expect(result.rubrik).toHaveLength(20);
-    expect(result.rubrik[0].skor1).toHaveLength(500);
+    expect(result.rubrik).toHaveLength(4);
+    expect(result.rubrik[0].skor1).toBe(RUBRIK_DEFAULT[0].skor1);
     expect(result.warning).toContain('dipotong menjadi 500 karakter');
     expect(result.warning).toContain('melebihi 20 baris');
   });

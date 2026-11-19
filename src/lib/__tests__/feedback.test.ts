@@ -9,6 +9,7 @@ import {
 } from '../feedback';
 import { FeedbackRow } from '../feedback';
 import { RUBRIK_DEFAULT } from '../constants';
+import { SkorJawaban } from '../../types';
 
 const fixture: FeedbackRow[] = [
   { id: 'PJOK_0315', kelas: '3', pertanyaan: 'P?', context: 'C', jawaban: 'Jawaban pertama', status: '' },
@@ -72,13 +73,17 @@ describe('template Feedback', () => {
     const result = await parseFeedbackFile(new File([data], 'template-khusus.xlsx'));
 
     expect(result.rows).toEqual(fixture);
-    expect(result.rubrik).toEqual(rubrik);
-    expect(result.rubrikWarning).toBeUndefined();
+    expect(result.rubrik?.map(row => row.kriteria)).toEqual(RUBRIK_DEFAULT.map(row => row.kriteria));
+    expect(result.rubrik?.find(row => row.kriteria === 'Ketepatan Materi')?.skor1).toBe('Salah/tidak sesuai materi PJOK');
+    expect(result.rubrikWarning).toContain('Kriteria di luar rubrik penelitian diabaikan');
   });
 
   it('memulihkan skor dari sheet Skor pada template hasil', async () => {
-    const rubric = [{ kriteria: 'Ketepatan', skor1: 'x', skor3: 'y', skor5: 'z' }];
-    const scores = { [JSON.stringify(['PJOK_0315', 'Jawaban pertama'])]: { Ketepatan: 4 as const } };
+    const rubric = RUBRIK_DEFAULT;
+    const scores = {
+      [JSON.stringify(['PJOK_0315', 'Jawaban pertama'])]:
+        Object.fromEntries(rubric.map(item => [item.kriteria, 4])) as SkorJawaban,
+    };
     const workbook = await buildFeedbackWorkbook(fixture, rubric, scores);
     const data = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
     const result = await parseFeedbackFile(new File([data], 'hasil.xlsx'));
@@ -118,7 +123,15 @@ describe('template Feedback', () => {
     expect(new Set(first.map(row => row.jawaban))).toEqual(new Set(['Jawaban pertama', 'Jawaban kedua']));
     expect(fixture.map(row => row.jawaban)).toEqual(['Jawaban pertama', 'Jawaban kedua', 'Jawaban tiga', 'Jawaban empat']);
     expect(feedbackGroupComplete(groups[0])).toBe(false);
-    expect(feedbackGroupComplete({ id: 'x', rows: fixture.slice(0, 2).map(row => ({ ...row, status: 'Yes' })) })).toBe(true);
+    const validRows = fixture.slice(0, 2).map((row, index) => ({ ...row, status: index === 0 ? 'Yes' as const : 'No' as const }));
+    expect(feedbackGroupComplete({ id: 'x', rows: validRows })).toBe(false);
+    const completeScores: Record<string, SkorJawaban> = Object.fromEntries(validRows.map((row, index) => [
+      JSON.stringify([row.id, row.jawaban]),
+      Object.fromEntries(RUBRIK_DEFAULT.map(criteria => [criteria.kriteria, index === 0 ? 5 : 3])) as SkorJawaban,
+    ]));
+    expect(feedbackGroupComplete({ id: 'x', rows: validRows }, completeScores)).toBe(true);
+    expect(feedbackGroupComplete({ id: 'same-yes', rows: fixture.slice(0, 2).map(row => ({ ...row, id: 'same-yes', status: 'Yes' })) })).toBe(false);
+    expect(feedbackGroupComplete({ id: 'same-no', rows: fixture.slice(0, 2).map(row => ({ ...row, id: 'same-no', status: 'No' })) })).toBe(false);
     expect(feedbackGroupComplete({
       id: '',
       rows: fixture.slice(0, 2).map(row => ({ ...row, status: 'Yes' })),
@@ -132,5 +145,30 @@ describe('template Feedback', () => {
         status: 'Yes',
       })),
     })).toBe(false);
+  });
+
+  it('mewajibkan seluruh skor dan total skor Yes harus lebih besar daripada No', () => {
+    const group = groupFeedbackRows([
+      { id: 'DPO_1', kelas: '1', pertanyaan: 'P?', context: 'C', jawaban: 'A', status: 'Yes' },
+      { id: 'DPO_1', kelas: '1', pertanyaan: 'P?', context: 'C', jawaban: 'B', status: 'No' },
+    ])[0];
+    const keyA = JSON.stringify(['DPO_1', 'A']);
+    const keyB = JSON.stringify(['DPO_1', 'B']);
+    const yesHigher: Record<string, SkorJawaban> = {
+      [keyA]: Object.fromEntries(RUBRIK_DEFAULT.map(item => [item.kriteria, 5])) as SkorJawaban,
+      [keyB]: Object.fromEntries(RUBRIK_DEFAULT.map(item => [item.kriteria, 3])) as SkorJawaban,
+    };
+    const tie: Record<string, SkorJawaban> = {
+      [keyA]: Object.fromEntries(RUBRIK_DEFAULT.map(item => [item.kriteria, 4])) as SkorJawaban,
+      [keyB]: Object.fromEntries(RUBRIK_DEFAULT.map(item => [item.kriteria, 4])) as SkorJawaban,
+    };
+    const noHigher: Record<string, SkorJawaban> = {
+      [keyA]: Object.fromEntries(RUBRIK_DEFAULT.map(item => [item.kriteria, 3])) as SkorJawaban,
+      [keyB]: Object.fromEntries(RUBRIK_DEFAULT.map(item => [item.kriteria, 5])) as SkorJawaban,
+    };
+    expect(feedbackGroupComplete(group, yesHigher, RUBRIK_DEFAULT)).toBe(true);
+    expect(feedbackGroupComplete(group, tie, RUBRIK_DEFAULT)).toBe(false);
+    expect(feedbackGroupComplete(group, noHigher, RUBRIK_DEFAULT)).toBe(false);
+    expect(feedbackGroupComplete(group, { [keyA]: yesHigher[keyA] }, RUBRIK_DEFAULT)).toBe(false);
   });
 });

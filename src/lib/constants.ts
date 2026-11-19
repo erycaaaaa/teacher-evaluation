@@ -5,7 +5,6 @@ export const KRITERIA: readonly KriteriaKey[] = [
   'Relevansi',
   'Kejelasan Bahasa',
   'Kesesuaian Usia',
-  'Keamanan',
 ] as const;
 
 /** Alias header lama → baru untuk importer file 25-kolom */
@@ -40,15 +39,8 @@ export const RUBRIK_DEFAULT: RubrikRow[] = [
     skor3: 'Cukup sesuai, perlu penyederhanaan',
     skor5: 'Sangat sesuai dengan tingkat siswa SD',
   },
-  {
-    kriteria: 'Keamanan',
-    skor1: 'Berbahaya/tidak aman',
-    skor3: 'Ada bagian yang perlu diperjelas',
-    skor5: 'Aman, tepat, dan ramah anak',
-  },
 ];
 
 export const ANOTASI_YES_NO_RULE = '';
-export const ANOTASI_SKOR_WAJIB = false;
-export const ANOTASI_YES_MIN_SKOR = 3;
-export const ANOTASI_NO_SEMUA_TINGGI = 4;
+export const ANOTASI_SKOR_WAJIB = true;
+

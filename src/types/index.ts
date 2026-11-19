@@ -2,8 +2,7 @@ export type KriteriaKey =
   | 'Ketepatan Materi'
   | 'Relevansi'
   | 'Kejelasan Bahasa'
-  | 'Kesesuaian Usia'
-  | 'Keamanan';
+  | 'Kesesuaian Usia';
 
 export type RubrikRow = {
   kriteria: string;
@@ -96,12 +95,10 @@ export interface EvaluasiGuruRow {
   'SFT - Relevansi': number | string;
   'SFT - Kejelasan Bahasa': number | string;
   'SFT - Kesesuaian Usia': number | string;
-  'SFT - Keamanan': number | string;
   'DPO - Ketepatan Materi': number | string;
   'DPO - Relevansi': number | string;
   'DPO - Kejelasan Bahasa': number | string;
   'DPO - Kesesuaian Usia': number | string;
-  'DPO - Keamanan': number | string;
   Keputusan: KeputusanModel;
   Komentar: string;
   Waktu: string;

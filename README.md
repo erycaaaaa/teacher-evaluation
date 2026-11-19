@@ -8,9 +8,9 @@ SPA pendamping alur penelitian Kaggle `dpo-guru`: guru memberi anotasi Yes/No pa
 
 - Dua bagian website: Ruang Guru (`#/guru`) dan Chatbot (`#/chatbot`).
 - Mode anotasi Yes/No dari file XLSX/CSV dan mode evaluasi A/B dari paket JSON.
-- Rubrik anotasi dapat dimuat dari sheet `Rubrik`; guru memberi skor 1–5 per kriteria dan Yes/No. Ekspor memuat sheet `Feedback` + `Rubrik` + `Skor` jika ada skor; CSV/template lama memakai rubrik default.
+- Rubrik anotasi menggunakan empat kriteria (Ketepatan Materi, Relevansi, Kejelasan Bahasa, Kesesuaian Usia); kriteria Keamanan tidak digunakan. Guru memberi skor 1–5 per kriteria dan preferensi Yes/No. Setiap pasangan wajib tepat satu `Yes` dan satu `No`; memilih salah satu otomatis menetapkan pilihan berlawanan pada kandidat pasangannya. Ekspor memuat sheet `Feedback` + `Rubrik` + `Skor` jika ada skor.
 - Data tugas tidak dibuat otomatis: semua tugas dimuat dari file pengguna.
-- Autosave lokal, progres kelas, ekspor sesuai format notebook, dan backup/pemulihan.
+- Autosave lokal, progres kelas, halaman review seluruh pasangan sebelum ekspor, tombol perbaikan jawaban, ekspor sesuai format notebook, dan backup/pemulihan.
 - Chat PJOK yang mengambil jawaban hanya dari `POST /chat`.
 - Penyimpanan browser menggunakan `localStorage`; tidak ada database aplikasi.
 

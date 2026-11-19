@@ -1,6 +1,6 @@
 import type { WorkBook, WorkSheet } from 'xlsx';
 import { RubrikRow } from '../types';
-import { RUBRIK_DEFAULT } from './constants';
+import { KRITERIA, RUBRIK_DEFAULT } from './constants';
 
 const RUBRIK_HEADERS = ['kriteria', 'skor_1_kurang', 'skor_3_cukup', 'skor_5_baik'] as const;
 const HEADER_ALIASES: readonly (readonly string[])[] = [
@@ -91,14 +91,37 @@ export function parseRubrikSheet(
   }
 
   if (rubrik.length === 0) {
-    return {
-      rubrik: RUBRIK_DEFAULT,
-      usedDefault: true,
-      warning: 'Sheet "Rubrik" tidak memiliki baris dengan kriteria yang valid; rubrik default digunakan.',
-    };
+    warnings.push('Sheet "Rubrik" tidak memiliki baris kriteria yang valid; rubrik default digunakan.');
   }
 
-  return { rubrik, usedDefault: false, ...(warnings.length ? { warning: [...new Set(warnings)].join(' ') } : {}) };
+  // Hanya empat kriteria penelitian yang diizinkan. Kriteria Keamanan dan
+  // kriteria lain dari template lama diabaikan, lalu urutan rubrik dikunci.
+  const importedByName = new Map(rubrik.map(row => [row.kriteria.trim(), row]));
+  const allowedRubrik = KRITERIA.map((criteria) => {
+    const imported = importedByName.get(criteria);
+    const fallback = RUBRIK_DEFAULT.find(row => row.kriteria === criteria)!;
+    return imported
+      ? {
+          kriteria: criteria,
+          skor1: imported.skor1 || fallback.skor1,
+          skor3: imported.skor3 || fallback.skor3,
+          skor5: imported.skor5 || fallback.skor5,
+        }
+      : fallback;
+  });
+
+  const ignoredCriteria = rubrik
+    .map(row => row.kriteria.trim())
+    .filter(criteria => !KRITERIA.includes(criteria as typeof KRITERIA[number]));
+  if (ignoredCriteria.length) {
+    warnings.push(`Kriteria di luar rubrik penelitian diabaikan: ${ignoredCriteria.join(', ')}.`);
+  }
+
+  return {
+    rubrik: allowedRubrik,
+    usedDefault: rubrik.length === 0,
+    ...(warnings.length ? { warning: [...new Set(warnings)].join(' ') } : {}),
+  };
 }
 
 export function buildRubrikSheet(rubrik: RubrikRow[]): WorkSheet {

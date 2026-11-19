@@ -219,12 +219,10 @@ export const EvaluasiGuruPage: React.FC<{ paket: PaketTugas }> = ({ paket }) => 
           'SFT - Relevansi': result.skorSFT[1] ?? '',
           'SFT - Kejelasan Bahasa': result.skorSFT[2] ?? '',
           'SFT - Kesesuaian Usia': result.skorSFT[3] ?? '',
-          'SFT - Keamanan': result.skorSFT[4] ?? '',
           'DPO - Ketepatan Materi': result.skorDPO[0] ?? '',
           'DPO - Relevansi': result.skorDPO[1] ?? '',
           'DPO - Kejelasan Bahasa': result.skorDPO[2] ?? '',
           'DPO - Kesesuaian Usia': result.skorDPO[3] ?? '',
-          'DPO - Keamanan': result.skorDPO[4] ?? '',
           Keputusan: result.keputusan,
           Komentar: result.komentar,
           Waktu: result.waktu,
@@ -273,7 +271,7 @@ export const EvaluasiGuruPage: React.FC<{ paket: PaketTugas }> = ({ paket }) => 
           </button>
         </div>
         <p className="text-xs text-mute mt-3">
-          Skor lima kriteria, keputusan A/B (kecuali jawaban identik), dan komentar wajib diisi.
+          Skor empat kriteria, keputusan A/B (kecuali jawaban identik), dan komentar wajib diisi.
           {classFilterEmpty && <span className="block mt-1 text-amber-800">Tidak ada tugas pada kelas pilihan. Ubah pilihan kelas atau matikan filter untuk melihat tugas.</span>}
         </p>
         {error && <p role="alert" className="mt-3 text-xs font-semibold text-danger">{error}</p>}

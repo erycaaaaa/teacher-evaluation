@@ -1,7 +1,7 @@
 import type { WorkBook, WorkSheet } from 'xlsx';
 import { NilaiSkor, RubrikRow, SkorJawaban } from '../types';
 import type { FeedbackRow } from './feedback';
-import { ANOTASI_NO_SEMUA_TINGGI, ANOTASI_YES_MIN_SKOR } from './constants';
+import { RUBRIK_DEFAULT } from './constants';
 
 const SKOR_HEADERS = ['id', 'jawaban', 'kriteria', 'skor'] as const;
 
@@ -55,31 +55,115 @@ export function toggleSkor(
 }
 
 export function getSkorConsistencyWarnings(
-  row: FeedbackRow,
-  label: string,
-  rubric: RubrikRow[],
-  scores: SkorJawaban,
+  _row: FeedbackRow,
+  _label: string,
+  _rubric: RubrikRow[],
+  _scores: SkorJawaban,
 ): string[] {
-  if (row.status === 'Yes') {
-    const lowScores = rubric.filter(criteria => {
-      const score = scores[criteria.kriteria];
-      return score !== undefined && score < ANOTASI_YES_MIN_SKOR;
-    });
-    if (lowScores.length) {
-      return [`${label} ditandai Yes, tetapi skornya rendah pada: ${lowScores.map(item => item.kriteria).join(', ')}.`];
-    }
-  }
-  if (
-    row.status === 'No' &&
-    rubric.length > 0 &&
-    rubric.every(criteria => {
-      const score = scores[criteria.kriteria];
-      return score !== undefined && score >= ANOTASI_NO_SEMUA_TINGGI;
-    })
-  ) {
-    return [`${label} ditandai No, tetapi semua kriteria (${rubric.map(item => item.kriteria).join(', ')}) memiliki skor ${ANOTASI_NO_SEMUA_TINGGI} atau lebih.`];
-  }
   return [];
+}
+
+export interface PairEvaluation {
+  jawaban1Total: number | null;
+  jawaban2Total: number | null;
+  winner: 'jawaban1' | 'jawaban2' | null;
+  isComplete: boolean;
+  isTie: boolean;
+  isValid: boolean;
+  warning: string | null;
+}
+
+export function evaluatePair(
+  rows: FeedbackRow[],
+  skor: Record<string, SkorJawaban>,
+  rubrik: RubrikRow[] = RUBRIK_DEFAULT,
+): PairEvaluation {
+  if (rows.length !== 2) {
+    return {
+      jawaban1Total: null,
+      jawaban2Total: null,
+      winner: null,
+      isComplete: false,
+      isTie: false,
+      isValid: false,
+      warning: 'Pasangan harus terdiri dari tepat dua jawaban.',
+    };
+  }
+
+  const totals = rows.map(row => {
+    const scores = skor[feedbackRowKey(row)];
+    if (!scores || rubrik.length === 0) return null;
+    if (!rubrik.every(item => isScore(scores[item.kriteria]))) return null;
+    return rubrik.reduce((total, item) => total + scores[item.kriteria]!, 0);
+  });
+
+  const [jawaban1Total, jawaban2Total] = totals;
+  const isComplete = jawaban1Total !== null && jawaban2Total !== null;
+  if (!isComplete) {
+    return {
+      jawaban1Total,
+      jawaban2Total,
+      winner: null,
+      isComplete: false,
+      isTie: false,
+      isValid: false,
+      warning: 'Lengkapi seluruh skor pada kedua jawaban.',
+    };
+  }
+
+  if (jawaban1Total === jawaban2Total) {
+    return {
+      jawaban1Total,
+      jawaban2Total,
+      winner: null,
+      isComplete: true,
+      isTie: true,
+      isValid: false,
+      warning: 'Kedua jawaban memiliki nilai setara. Pasangan belum dapat dinyatakan valid; silakan tinjau kembali penilaian.',
+    };
+  }
+
+  const winner = jawaban1Total > jawaban2Total ? 'jawaban1' : 'jawaban2';
+  const yesRows = rows.filter(row => row.status === 'Yes');
+  const noRows = rows.filter(row => row.status === 'No');
+
+  if (yesRows.length !== 1 || noRows.length !== 1) {
+    return {
+      jawaban1Total,
+      jawaban2Total,
+      winner,
+      isComplete: true,
+      isTie: false,
+      isValid: false,
+      warning: 'Pilih tepat satu Yes dan satu No.',
+    };
+  }
+
+  const yesIndex = rows.indexOf(yesRows[0]);
+  const yesIsWinner = (yesIndex === 0 && winner === 'jawaban1') ||
+    (yesIndex === 1 && winner === 'jawaban2');
+
+  if (!yesIsWinner) {
+    return {
+      jawaban1Total,
+      jawaban2Total,
+      winner,
+      isComplete: true,
+      isTie: false,
+      isValid: false,
+      warning: 'Skor jawaban Yes harus lebih tinggi daripada jawaban No.',
+    };
+  }
+
+  return {
+    jawaban1Total,
+    jawaban2Total,
+    winner,
+    isComplete: true,
+    isTie: false,
+    isValid: true,
+    warning: null,
+  };
 }
 
 function parseRangeEnd(range: string): { row: number; column: number } | null {
@@ -115,6 +199,8 @@ export function parseSkorSheet(
   const criteriaNames = new Set(rubrik.map(row => row.kriteria));
   const skor: Record<string, SkorJawaban> = {};
   let ignored = 0;
+  let duplicate = 0;
+  const seen = new Set<string>();
 
   for (let rowNumber = 2; rowNumber <= range.row; rowNumber++) {
     const id = cellValue(sheet, rowNumber, idIndex, true, false);
@@ -136,12 +222,20 @@ export function parseSkorSheet(
     }
 
     const scoresForAnswer = skor[key] ?? (skor[key] = {});
+    const duplicateKey = `${key}\u001f${kriteria}`;
+    if (seen.has(duplicateKey)) duplicate++;
+    seen.add(duplicateKey);
     scoresForAnswer[kriteria] = value;
   }
 
   return {
     skor,
-    ...(ignored ? { warning: `${ignored} baris pada sheet "Skor" diabaikan karena ID/jawaban, kriteria, atau nilai skor tidak valid.` } : {}),
+    ...((ignored || duplicate) ? {
+      warning: [
+        ignored ? `${ignored} baris pada sheet "Skor" diabaikan karena ID/jawaban, kriteria, atau nilai skor tidak valid.` : '',
+        duplicate ? `${duplicate} baris duplikat pada sheet "Skor" diabaikan dengan menggunakan nilai terakhir.` : '',
+      ].filter(Boolean).join(' '),
+    } : {}),
   };
 }
 

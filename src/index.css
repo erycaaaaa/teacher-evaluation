@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .text-xs {
+    font-size: 0.875rem;
+  }
+
+  .text-sm {
+    font-size: 0.9375rem;
+  }
+}
+
 @layer base {
   :root {
     --bg: #F3F5F2;

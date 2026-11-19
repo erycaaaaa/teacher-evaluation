@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { AlertTriangle, Download, Upload } from 'lucide-react';
 import { PaketTugas } from '../types';
 import { validatePaketGuru } from '../lib/paket';
@@ -22,6 +22,29 @@ const LS_EVALUATION_PACKAGE = 'qb_guru_eval_paket_v1';
 const LS_EVALUATION_DATA = 'qb_guru_eval_data_v1';
 const LS_ANNOTATION_EXPORT = 'qb_guru_anotasi_export_snapshot_v1';
 const LS_EVALUATION_EXPORT = 'qb_guru_eval_export_snapshot_v1';
+const WEEK_TEMPLATE_URLS = import.meta.glob('../data-eval/*.xlsx', {
+  eager: true,
+  import: 'default',
+  query: '?url',
+}) as Record<string, string>;
+
+const WEEK_OPTIONS = [1, 2, 3, 4] as const;
+
+function getWeekTemplateUrl(week: number): string | undefined {
+  const entries = Object.entries(WEEK_TEMPLATE_URLS);
+  const weeklyTemplate = entries.find(([path]) => {
+    const fileName = path.split(/[\\/]/).pop() ?? '';
+    return new RegExp(`^(?:week|minggu)[ _-]*${week}(?:[ _-].*)?\\.xlsx$`, 'i').test(fileName);
+  });
+  if (weeklyTemplate) return weeklyTemplate[1];
+
+  if (week === 1) {
+    return entries.find(([path]) =>
+      path.toLowerCase().endsWith('/template_feedback_guru.xlsx')
+    )?.[1];
+  }
+  return undefined;
+}
 
 function readStoredJson<T>(key: string, fallback: T): T {
   try {
@@ -89,16 +112,10 @@ export const GuruPage: React.FC = () => {
   const [fileWarning, setFileWarning] = useState<string | null>(null);
   const [loadedFileKey, setLoadedFileKey] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedWeek, setSelectedWeek] = useState<number>(1);
+  
 
-  useEffect(() => {
-    if (!window.location.hash) window.location.hash = '#/guru';
-  }, []);
-
-  const handleLoadFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
-
+  const loadFile = async (file: File) => {
     setFileError(null);
     setFileSuccess(null);
     setFileWarning(null);
@@ -209,6 +226,37 @@ export const GuruPage: React.FC = () => {
     setFileSuccess(`Template Feedback berhasil dimuat (${result.groups?.length ?? 0} ID).`);
   };
 
+  const handleLoadFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (file) void loadFile(file);
+  };
+
+  const handleLoadWeek = async () => {
+    const templateUrl = getWeekTemplateUrl(selectedWeek);
+    if (!templateUrl) {
+      setFileError(`File soal untuk Week ${selectedWeek} belum tersedia.`);
+      return;
+    }
+
+    setFileError(null);
+    setFileSuccess(null);
+    setFileWarning(null);
+    try {
+      const response = await fetch(templateUrl);
+      if (!response.ok) {
+        throw new Error(`File lokal merespons dengan status ${response.status}.`);
+      }
+      const fileName = templateUrl.split('/').pop()?.split('?')[0] ?? `week-${selectedWeek}.xlsx`;
+      await loadFile(new File([await response.blob()], fileName, {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      }));
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : 'File tidak dapat dibaca.';
+      setFileError(`Gagal memuat file Week ${selectedWeek}: ${reason}`);
+    }
+  };
+
   const handleBackup = () => {
     try {
       unduhBerkasCadangan();
@@ -246,6 +294,37 @@ export const GuruPage: React.FC = () => {
   return (
     <div className="max-w-[1160px] mx-auto px-4 sm:px-6 py-6 flex flex-col gap-5">
       <section className="p-5 rounded-card bg-white border border-bd shadow-sm">
+        <div className="mb-4 rounded-card border border-bd bg-bg/50 p-4">
+          <h2 className="text-sm font-bold text-tx">Pilih soal berdasarkan minggu</h2>
+          <p className="mt-1 text-xs text-mute">
+            File Excel tersedia secara lokal dari folder data-eval.
+          </p>
+          <div className="mt-3 flex flex-wrap items-end gap-3">
+            <label className="text-sm font-semibold text-tx">
+              Week
+              <select
+                aria-label="Pilih week"
+                value={selectedWeek}
+                onChange={event => setSelectedWeek(Number(event.target.value))}
+                className="mt-1 block min-h-[44px] rounded-btn border border-bdi bg-white px-3"
+              >
+                {WEEK_OPTIONS.map(week => (
+                  <option key={week} value={week} disabled={!getWeekTemplateUrl(week)}>
+                    Week {week}{getWeekTemplateUrl(week) ? '' : ' (belum tersedia)'}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              onClick={() => void handleLoadWeek()}
+              disabled={!getWeekTemplateUrl(selectedWeek)}
+              className="min-h-[44px] rounded-btn bg-pri px-4 py-2 text-sm font-bold text-white disabled:opacity-40"
+            >
+              Muat soal Week {selectedWeek}
+            </button>
+          </div>
+        </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <strong className="text-sm font-bold text-pri">{modeLabel}</strong>
           <div className="flex flex-wrap gap-2">
